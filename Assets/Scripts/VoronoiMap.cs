@@ -4,14 +4,15 @@ using UnityEngine;
 
 public class VoronoiMap : MonoBehaviour {
 
-    public struct Cell {
+    public class Cell {
         public Vector2 pos;
         public List<Vertex> vertices;
     }
 
-    public struct Vertex {
+    public class Vertex {
         public Vector2 pos;
         public List<Edge> edges;
+        public List<Cell> centers;
     }
 
     public struct Edge {
@@ -24,11 +25,11 @@ public class VoronoiMap : MonoBehaviour {
     // Used for generating the maps itself
     private struct VoronoiEvent {
         // If false its a circle event
-        public bool siteEvent;
+        public bool isSiteEvent;
         public Vector2 pos;
     }
-    private class VoronoiEventComparer : IComparer<VoronoiEvent>  {
-        public int Compare(VoronoiEvent x, VoronoiEvent y) => (int)(x.pos.x - y.pos.y);
+    private class VoronoiEventComparer : IComparer<VoronoiEvent> {
+        public int Compare(VoronoiEvent x, VoronoiEvent y) => (x.pos.y != y.pos.y ? -x.pos.y.CompareTo(y.pos.y) : x.pos.x.CompareTo(y.pos.x));
     };
 
     public List<Cell> cells;
@@ -72,22 +73,24 @@ public class VoronoiMap : MonoBehaviour {
                 )
             };
         }
-
+        edges = new List<Edge>();
+        vertices = new List<Vertex>();
         // We'll use a sweeping algorithm to calculate the vertices and edges
         // Start with a priority queue for our events, initially storing
-        // all our site events (each cell) sorted by x-coord
+        // all our site events (each cell) sorted by y-coord
         SortedSet<VoronoiEvent> events = new SortedSet<VoronoiEvent>(new VoronoiEventComparer());
         foreach (Cell cell in cells) {
             events.Add(new VoronoiEvent {
                 pos = cell.pos,
-                siteEvent = true
+                isSiteEvent = true
             });
         }
+
 
         while (events.Count > 0) {
             VoronoiEvent e = events.Min;
             events.Remove(e);
-            if (e.siteEvent) {
+            if (e.isSiteEvent) {
 
             } else {
 
@@ -123,5 +126,78 @@ public class VoronoiMap : MonoBehaviour {
             LineRenderer line = edgeGObject.GetComponentInChildren<LineRenderer>();
             line.SetPositions(new Vector3[] { edge.v1.pos, edge.v2.pos });
         }
+    }
+
+    private Vector2 CircumcenterPoints(Vector2 p1, Vector2 p2, Vector2 p3)
+    {
+        Line bisector1 = PerpendicularBisector(p1, p2);
+        Line bisector2 = PerpendicularBisector(p2, p3);
+        return IntersectLines(bisector1, bisector2);
+    }
+
+    //Thank you https://en.wikipedia.org/wiki/Special_cases_of_Apollonius%27_problem#Type_4:_Two_points,_one_line
+    private Vector2 CircumcenterSweep(Vector2 p1, Vector2 p2, float ySweep)
+    {
+        Line sweep = new Line(new Vector2(0, ySweep), new Vector2(1, ySweep));
+        Vector2 g = IntersectLines(sweep, new Line(p1, p2));
+        float dist = Mathf.Sqrt((p1 - g).magnitude * (p2 - g).magnitude);
+
+        //There are two candidates
+        Vector2 c1 = new Vector2(g.x + dist, ySweep);
+        Vector2 c2 = new Vector2(g.x - dist, ySweep);
+
+        Vector2 m1 = CircumcenterPoints(p1, p2, c1);
+        Vector2 m2 = CircumcenterPoints(p1, p2, c2);
+        
+        //Return the middle of the circle with the smaller radius - I don't know if this is correct but it should be?
+        if((p1 - m1).sqrMagnitude <= (p1 - m2).sqrMagnitude)
+        {
+            return m1;
+        }
+        else
+        {
+            return m2;
+        }
+    }
+
+    //ax+by=c
+    class Line
+    {
+        public float a;
+        public float b;
+        public float c;
+
+        public Line(float a, float b, float c)
+        {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+
+        public Line(Vector2 p1, Vector2 p2)
+        {
+            a = p2.y - p1.y;
+            b = p1.x - p2.x;
+            c = a * p1.x + b * p1.y;
+        }
+    }
+
+    private Line PerpendicularBisector(Vector2 p1, Vector2 p2)
+    {
+        Line side = new Line(p1, p2);
+        Vector2 midpoint = 0.5f * (p1 + p2);
+        return new Line(-side.b, side.a, -side.b * midpoint.x + side.a * midpoint.y);
+    }
+
+    private Vector2 IntersectLines(Line l1, Line l2)
+    {
+        float det = l1.a * l2.b - l2.a * l1.b;
+        if(det == 0)
+        {
+            return Vector2.zero; //Your triangle should not have parallel lines :(
+        }
+        float x = (l2.b * l1.c - l1.b * l2.c) / det;
+        float y = (l1.a * l2.c - l2.a * l1.c) / det;
+        return new Vector2(x, y);
     }
 }

@@ -143,20 +143,30 @@ public class VoronoiMap : MonoBehaviour {
         float dist = Mathf.Sqrt((p1 - g).magnitude * (p2 - g).magnitude);
 
         //There are two candidates
-        Vector2 c1 = new Vector2(g.x + dist, ySweep);
-        Vector2 c2 = new Vector2(g.x - dist, ySweep);
+        Vector2 gLeft = new Vector2(g.x - dist, ySweep);
+        Vector2 gRight = new Vector2(g.x + dist, ySweep);
 
-        Vector2 m1 = CircumcenterPoints(p1, p2, c1);
-        Vector2 m2 = CircumcenterPoints(p1, p2, c2);
+        Vector2 cInner; //Lies below the reference line
+        Vector2 cOuter; //Lies above the reference line
         
-        //Return the middle of the circle with the smaller radius - I don't know if this is correct but it should be?
-        if((p1 - m1).sqrMagnitude <= (p1 - m2).sqrMagnitude)
+        if(new Line(p1,p2).slope < 0) //Meeting g happens to the right
         {
-            return m1;
+            cInner = CircumcenterPoints(p1, p2, gLeft);
+            cOuter = CircumcenterPoints(p1, p2, gRight);
         }
-        else
+        else //If g is on the left, reverse the result set
         {
-            return m2;
+            cOuter = CircumcenterPoints(p1, p2, gLeft);
+            cInner = CircumcenterPoints(p1, p2, gRight);
+        }
+
+        if(p1.x < p2.x) //If moving L to R, return the inner result
+        {
+            return cInner;
+        }
+        else //Otherwise return the outer result
+        {
+            return cOuter;
         }
     }
 
@@ -166,6 +176,7 @@ public class VoronoiMap : MonoBehaviour {
         public float a;
         public float b;
         public float c;
+        public float slope { get { return -a / b; } }
 
         public Line(float a, float b, float c)
         {

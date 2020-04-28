@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -363,6 +363,36 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 7482137808561407359, guid: c0edd97d15d03e14ba90b034582d3d9a,
+        type: 3}
+      propertyPath: eventPrefab
+      value: 
+      objectReference: {fileID: 7127900571807218309, guid: f37d6e1d8ab9e5046a589e9da22c7457,
+        type: 3}
+    - target: {fileID: 7482137808561407359, guid: c0edd97d15d03e14ba90b034582d3d9a,
+        type: 3}
+      propertyPath: beachPrefab
+      value: 
+      objectReference: {fileID: 6859225837945034073, guid: b2994ea2fdd2e3c439a84011c457bb09,
+        type: 3}
+    - target: {fileID: 7482137808561407359, guid: c0edd97d15d03e14ba90b034582d3d9a,
+        type: 3}
+      propertyPath: sweepPrefab
+      value: 
+      objectReference: {fileID: 6859225837945034073, guid: accd7aa0ec98a554590c20fd8501bb12,
+        type: 3}
+    - target: {fileID: 7482137808561407359, guid: c0edd97d15d03e14ba90b034582d3d9a,
+        type: 3}
+      propertyPath: beachVertPrefab
+      value: 
+      objectReference: {fileID: 647198413344411688, guid: e6802b95033153449b02e54aacd2b567,
+        type: 3}
+    - target: {fileID: 7482137808561407359, guid: c0edd97d15d03e14ba90b034582d3d9a,
+        type: 3}
+      propertyPath: beachLinePrefab
+      value: 
+      objectReference: {fileID: 6859225837945034073, guid: c52fdd4934e3cb648a2ab29b8010f6ef,
+        type: 3}
     - target: {fileID: 7814858716297781889, guid: c0edd97d15d03e14ba90b034582d3d9a,
         type: 3}
       propertyPath: m_Name
@@ -377,6 +407,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 147915006220339208, guid: 5ddd364422e64c84c8381e8e5f6e542e,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -24.999939
+      objectReference: {fileID: 0}
+    - target: {fileID: 213470727237630156, guid: 5ddd364422e64c84c8381e8e5f6e542e,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -24.999939
+      objectReference: {fileID: 0}
     - target: {fileID: 314127850434573226, guid: 5ddd364422e64c84c8381e8e5f6e542e,
         type: 3}
       propertyPath: m_Name
@@ -406,6 +446,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.x
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 683890085626942560, guid: 5ddd364422e64c84c8381e8e5f6e542e,
+        type: 3}
+      propertyPath: width
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 683890085626942560, guid: 5ddd364422e64c84c8381e8e5f6e542e,
+        type: 3}
+      propertyPath: height
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 868617178397096570, guid: 5ddd364422e64c84c8381e8e5f6e542e,
         type: 3}
@@ -581,6 +631,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2790802488565810221, guid: 5ddd364422e64c84c8381e8e5f6e542e,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -24.999939
       objectReference: {fileID: 0}
     - target: {fileID: 3267919880800779957, guid: 5ddd364422e64c84c8381e8e5f6e542e,
         type: 3}

@@ -7,18 +7,10 @@ using static Geometry;
 public class BeachLine
 {
     private List<Cell> arcs;
-    private List<Breakpoint> breaks;
-    float xMin;
-    float xMax;
-    float yMax;
 
-    public BeachLine(float xMin, float xMax, float yMax)
+    public BeachLine()
     {
         arcs = new List<Cell>();
-        breaks = new List<Breakpoint>();
-        this.xMin = xMin;
-        this.xMax = xMax;
-        this.yMax = yMax;
     }
 
     public Cell Search(float k, float y)
@@ -42,13 +34,6 @@ public class BeachLine
         HitInfo output = new HitInfo(hit, left, right);
         arcs.Insert(index + 1, c);
         arcs.Insert(index + 2, hit);
-        if (index < breaks.Count)
-            breaks.RemoveAt(index);
-        breaks.Insert(index, new Breakpoint(CircumcenterSweep(arcs[index].pos, arcs[index + 1].pos, c.pos.y).y));
-        breaks.Insert(index + 1, new Breakpoint(CircumcenterSweep(arcs[index+1].pos, arcs[index + 2].pos, c.pos.y).y));
-        if(index+3 < arcs.Count)
-            breaks.Insert(index + 2, new Breakpoint(CircumcenterSweep(arcs[index+2].pos, arcs[index + 3].pos, c.pos.y).y));
-        Debug.Log(arcs.Count);
 
         return output;
     }
@@ -60,14 +45,6 @@ public class BeachLine
         if(hit == del)
         {
             arcs.RemoveAt(index);
-            if(index < breaks.Count)
-            {
-                breaks.RemoveAt(index);
-            }
-            if(index > 0)
-            {
-                breaks[index - 1] = new Breakpoint(CircumcenterSweep(arcs[index-1].pos, arcs[index].pos, pos.y).y);
-            }
             return true;
         }
         else if(hit == left && index+2 < arcs.Count)
@@ -75,11 +52,6 @@ public class BeachLine
             if(arcs[index+1] == del && arcs[index+2] == right)
             {
                 arcs.RemoveAt(index + 1);
-                breaks.RemoveAt(index);
-                if (index+1 > 0)
-                {
-                    breaks[index] = new Breakpoint(CircumcenterSweep(arcs[index].pos, arcs[index+1].pos, pos.y).y);
-                }
                 return true;
             }
         }
@@ -88,11 +60,6 @@ public class BeachLine
             if(arcs[index-1] == del && arcs[index-2] == left)
             {
                 arcs.RemoveAt(index - 1);
-                if (index < breaks.Count)
-                {
-                    breaks.RemoveAt(index);
-                }
-                breaks[index - 2] = new Breakpoint(CircumcenterSweep(arcs[index - 2].pos, arcs[index-1].pos, pos.y).y);
                 return true;
             }
         }
@@ -114,19 +81,7 @@ public class BeachLine
         int mid = Mathf.CeilToInt(size / 2.0f) + start-1;
         Debug.Log("start " + start + " end " + end +" index " + mid + " size " + size + " count " + arcs.Count);
         Vector2 bp = CircumcenterSweep(arcs[mid].pos, arcs[mid + 1].pos, y);
-        /*
-        if(bp.y > yMax) //Prune nonexistant breakpoints and try again
-        {
-            if(arcs[mid].pos.y < arcs[mid + 1].pos.y)
-            {
-                arcs.RemoveAt(mid + 1);
-            }
-            else
-            {
-                arcs.RemoveAt(mid);
-            }
-            return BinarySearch(Mathf.Max(0, start - 1), Mathf.Min(end,arcs.Count), k, y);
-        }*/
+
         if (k >= bp.x)
         {
             return BinarySearch(mid + 1, end, k, y);
@@ -135,6 +90,14 @@ public class BeachLine
         {
             return BinarySearch(start, mid + 1, k, y);
         }
+    }
+
+    private int Raycast(float x, float y)
+    {
+        float best = Mathf.Infinity;
+        int bestIndex = 0;
+
+        return 0;
     }
 
     public struct HitInfo
@@ -151,66 +114,13 @@ public class BeachLine
         }
     }
 
-    public void Validate(float y)
-    {
-        int index = 0;
-        while(index+1 < arcs.Count)
-        {
-            Vector2 bp = CircumcenterSweep(arcs[index].pos, arcs[index + 1].pos, y);
-            if(!breaks[index].isNew && bp.y > breaks[index].yLast)
-            {
-                if (arcs[index].pos.y < arcs[index].pos.y)
-                {
-                    arcs.RemoveAt(index + 1);
-                    breaks.RemoveAt(index);
-                    if(index < breaks.Count)
-                    {
-                        breaks[index] = new Breakpoint(CircumcenterSweep(arcs[index].pos, arcs[index + 1].pos, y).y);
-                    }
-                }
-                else
-                {
-                    arcs.RemoveAt(index);
-                    breaks.RemoveAt(index);
-                    if (index > 0)
-                    {
-                        breaks[index-1] = new Breakpoint(CircumcenterSweep(arcs[index-1].pos, arcs[index].pos, y).y);
-                    }
-                }
-            }
-            else
-            {
-                index++;
-            }
-        }
-        foreach(Breakpoint b in breaks)
-        {
-            b.isNew = false;
-        }
-        Debug.Log("arcs: " + arcs.Count + "\nbreakpoints" + breaks.Count);
-    }
-
     public List<Vector2> GetPoints(float y)
     {
         List<Vector2> points = new List<Vector2>();
-        points.Add(new Vector2(xMin, yMax));
         for(int i = 0; i+1 < arcs.Count; i++)
         {
             points.Add(CircumcenterSweep(arcs[i].pos, arcs[i + 1].pos, y));
         }
-        points.Add(new Vector2(xMax, yMax));
         return points;
-    }
-
-    private class Breakpoint
-    {
-        public bool isNew;
-        public float yLast;
-
-        public Breakpoint(float y)
-        {
-            yLast = y;
-            isNew = true;
-        }
     }
 }

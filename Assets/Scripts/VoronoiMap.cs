@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using static Geometry;
-using static BeachLine;
+using static BeachTree;
 using System.Linq;
 
 public class VoronoiMap : MonoBehaviour {
@@ -18,103 +18,73 @@ public class VoronoiMap : MonoBehaviour {
         public List<Edge> edges = new List<Edge>();
         public List<Cell> centers = new List<Cell>();
 
-        public Vertex(Vector2 pos, List<Cell> centers)
+        public Vertex(Vector2 pos)
         {
             this.pos = pos;
-            this.centers = centers;
-            foreach(Cell c in centers)
-            {
-                c.vertices.Add(this);
-            }
         }
     }
 
-    public class Edge : System.IEquatable<Edge>
+    public class Edge
     {
-        public Vertex v1;
-        public Vertex v2;
-        public Cell c1;
-        public Cell c2;
+        public Vertex start;
+        public Vertex end;
+        public Cell left;
+        public Cell right;
+        public Edge section; //Edge may have disconnected sections
 
-        public Edge(Cell c1, Cell c2)
+        public Vector2 direction;
+        public float f;
+        public float g; //directional values
+
+        public Edge(Vertex start, Cell left, Cell right)
         {
-            this.c1 = c1;
-            this.c2 = c2;
+            this.start = start;
+            this.left = left;
+            this.right = right;
 
-            c1.edges.Add(this);
-            c2.edges.Add(this);
+            f = (right.pos.x - left.pos.x) / (left.pos.y - right.pos.y);
+            g = start.pos.y - f * start.pos.x;
+            direction = new Vector2(right.pos.y - left.pos.y, left.pos.x- right.pos.x);
         }
+    }
 
-        public bool Equals(Edge other)
-        {
-            return (c1 == other.c1 && c2 == other.c2) || (c1 == other.c2 && c2 == other.c1);
-        }
-
-        public void AddVertex(Vertex v)
-        {
-            if(v1 == null)
-            {
-                v1 = v;
-                v1.edges.Add(this);
-            }
-            else if(v2 == null)
-            {
-                v2 = v;
-                v2.edges.Add(this);
-            }
-            else
-            {
-                if (v1.edges.Count == 1 && v1.centers.Count == 2)
-                {
-                    foreach(Cell c in v1.centers)
-                    {
-                        c.vertices.Remove(v1);
-                        c.vertices.Add(v);
-                    }
-                    v1 = v;
-                    v1.edges.Add(this);
-                }
-            }
-        }
+    public class Diagram
+    {
+        public List<Cell> cells = new List<Cell>();
+        public List<Vertex> vertices = new List<Vertex>();
+        public List<Edge> edges = new List<Edge>();
     }
 
     // Used for generating the maps itself
-    private abstract class VoronoiEvent {
+    public abstract class VoronoiEvent {
         public abstract Vector2 pos { get; }
     }
 
-    private class SiteEvent : VoronoiEvent
+    public class SiteEvent : VoronoiEvent
     {
         public Cell site;
         public override Vector2 pos { get { return site.pos; } }
     }
 
-    private class VertexEvent : VoronoiEvent, System.IEquatable<VertexEvent>
+    public class VertexEvent : VoronoiEvent, System.IEquatable<VertexEvent>
     {
-        public List<Cell> centers;
-        public Vector2 middle;
+        public List<BeachArc> arcs;
+        public Vector2 center;
         Vector2 bottom;
         public override Vector2 pos { get { return bottom; } }
 
-        public VertexEvent(Cell c1, Cell c2, Cell c3)
+        public VertexEvent(BeachArc cl, BeachArc cm, BeachArc cr)
         {
-            if (c1 == null || c2 == null || c3 == null)
+            if (cl == null || cm == null || cr == null)
                 return;
-            centers = new List<Cell>() { c1, c2, c3 };
-            middle = CircumcenterPoints(c1.pos, c2.pos, c3.pos);
-            bottom = new Vector2(middle.x, middle.y - (c1.pos - middle).magnitude); //Bottom of the circle
+            arcs = new List<BeachArc>() { cl, cm, cr };
+            center = CircumcenterPoints(cl.site.pos, cm.site.pos, cr.site.pos);
+            bottom = new Vector2(center.x, center.y - (cl.site.pos - center).magnitude); //Bottom of the circle
         }
 
         public bool Equals(VertexEvent other)
         {
-            foreach(Cell c in centers)
-            {
-                if (!other.centers.Contains(c))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return false;
         }
     }
 
@@ -123,9 +93,7 @@ public class VoronoiMap : MonoBehaviour {
         public int Compare(VoronoiEvent x, VoronoiEvent y) => (x.pos.y != y.pos.y ? -x.pos.y.CompareTo(y.pos.y) : x.pos.x.CompareTo(y.pos.x));
     };
 
-    public List<Cell> cells;
-    public List<Vertex> vertices;
-    public List<Edge> edges;
+    Diagram diagram;
 
     [SerializeField]
     private GameObject lineRendererPrefab;
@@ -156,7 +124,7 @@ public class VoronoiMap : MonoBehaviour {
         verticesContainer = new GameObject("Vertices").transform;
         verticesContainer.SetParent(transform);
 
-        if (cells == null)
+        if (diagram == null)
             StartCoroutine(Randomize());
 
         //ConstructMap();
@@ -164,50 +132,44 @@ public class VoronoiMap : MonoBehaviour {
 
     public IEnumerator Randomize() {
         // Generate cells
-        cells = new List<Cell>();
+        diagram = new Diagram();
         for (int i = 0; i < ConfigurationManager.Instance.numCells; i++) {
-            cells.Add(new Cell {
+            diagram.cells.Add(new Cell {
                 pos = new Vector2(
                     Random.Range(0, ConfigurationManager.Instance.width),
                     Random.Range(0, ConfigurationManager.Instance.height)
                 )
             });
         }
-        edges = new List<Edge>();
-        vertices = new List<Vertex>();
         // We'll use a sweeping algorithm to calculate the vertices and edges
         // Start with a priority queue for our events, initially storing
         // all our site events (each cell) sorted by y-coord
         SortedSet<VoronoiEvent> events = new SortedSet<VoronoiEvent>(new VoronoiEventComparer());
-        foreach (Cell cell in cells) {
+        foreach (Cell cell in diagram.cells) {
             events.Add(new SiteEvent {
                 site = cell
             });
         }
-        float xMin = cells.Select(x => x.pos.x).Min();
-        float xMax = cells.Select(x => x.pos.x).Max();
-        //Simplistic processing of first site
-        SiteEvent first = (SiteEvent)events.Min;
-        events.Remove(first);
-        float sweep = first.pos.y;
-        BeachLine beach = new BeachLine(xMin, xMax, sweep);
-        beach.Insert(first.site);
 
+        float sweep = ConfigurationManager.Instance.height;
+        BeachTree beach = new BeachTree(ConfigurationManager.Instance.width, ConfigurationManager.Instance.height,diagram, events);
+
+        
         GameObject sweepObj = Instantiate(sweepPrefab, lineRenderersContainer);
         LineRenderer sweepRend = sweepObj.GetComponentInChildren<LineRenderer>();
         GameObject eventObj = Instantiate(eventPrefab, verticesContainer);
         List<GameObject> beachObjs = new List<GameObject>();
         List<GameObject> diagramObjs = new List<GameObject>();
-        foreach (Cell cell in cells)
+        foreach (Cell cell in diagram.cells)
         {
             GameObject cellGObject = Instantiate(cellPrefab, cellsContainer);
             cellGObject.transform.localPosition = cell.pos;
             // TODO implement CellController and initialize it
         }
-        sweepRend.SetPositions(new Vector3[] { new Vector2(xMin, sweep), new Vector2(xMax, sweep) });
-        MakeBeach(beachObjs, beach.GetPoints(sweep));
-        
 
+        //MakeBeach(beachObjs, beach.GetPoints(sweep));
+
+        sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
         bool pause = true;
         while (pause)
         {
@@ -221,176 +183,39 @@ public class VoronoiMap : MonoBehaviour {
         while (events.Count > 0) {
             VoronoiEvent e = events.Min;
             events.Remove(e);
+            sweep = e.pos.y;
+            beach.sweep = e.pos.y;
+
+
+            eventObj.transform.localPosition = e.pos;
+            MakeVoronoi(diagramObjs);
+            sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
+            pause = true;
+            while (pause)
+            {
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    pause = false;
+                }
+                yield return null;
+            }
             if (e.GetType() == typeof(SiteEvent)) {
                 SiteEvent se = (SiteEvent)e;
-                Debug.Log("Site Event");
-
-                sweep = se.pos.y;
+                beach.Insert(se.site);
                 
-                sweepRend.SetPositions(new Vector3[] { new Vector2(xMin,sweep), new Vector2(xMax,sweep) });
-                eventObj.transform.localPosition = se.pos;
-                //beach.Validate(sweep);
-                MakeBeach(beachObjs, beach.GetPoints(sweep));
-                pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
-                beach.Validate(sweep);
-                MakeBeach(beachObjs, beach.GetPoints(sweep));
-                pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
-                BeachLine.HitInfo hit = beach.Insert(se.site);
-                Debug.Log(se.site == null);
-                Debug.Log(hit.target == null);
-                Edge newEdge = new Edge(se.site, hit.target);
-                Vertex newVert = new Vertex((se.site.pos + hit.target.pos) / 2, new Cell[] { se.site, hit.target }.ToList());
-                newEdge.v1 = newVert;
-                edges.Add(newEdge);
-                vertices.Add(newVert);
-
-                VertexEvent leftTriplet = new VertexEvent(hit.leftMost, hit.target, se.site);
-                if (!events.Contains(leftTriplet) && hit.leftMost != null)
-                {
-                    events.Add(leftTriplet);
-                }
-                VertexEvent rightTriplet = new VertexEvent(se.site, hit.target, hit.rightMost);
-                if (!events.Contains(rightTriplet) && hit.rightMost != null)
-                {
-                    events.Add(rightTriplet);
-                }
-                MakeBeach(beachObjs, beach.GetPoints(sweep));
-                pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
-                //MakeBeach(beachObjs, beach.GetPoints(sweep));
-                //pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
             } else {
                 VertexEvent ve = (VertexEvent)e;
-                Debug.Log("Vertex event");
+                beach.Remove(ve);
 
-                sweep = ve.pos.y;
-                
-                sweepRend.SetPositions(new Vector3[] { new Vector2(xMin, sweep), new Vector2(xMax, sweep) });
-                eventObj.transform.localPosition = ve.middle;
-                //beach.Validate(sweep);
-                MakeBeach(beachObjs, beach.GetPoints(sweep));
-                pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
-                beach.Validate(sweep);
-                MakeBeach(beachObjs, beach.GetPoints(sweep));
-                pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
-                if (!beach.Delete(ve.centers[0], ve.centers[1], ve.centers[2], new Vector2(ve.pos.x, sweep)))
-                {
-                    continue;
-                }
-                Vertex v = new Vertex(ve.middle, ve.centers);
-                Edge query = new Edge(ve.centers[0], ve.centers[1]);
-                Edge e1 = ve.centers[1].edges.Find(edge => edge.Equals(query));
-                e1.AddVertex(v);
-                query = new Edge(ve.centers[1], ve.centers[2]);
-                Edge e2 = ve.centers[1].edges.Find(edge => edge.Equals(query));
-                e2.AddVertex(v);
-                Edge e3 = new Edge(ve.centers[0], ve.centers[2]);
-                e3.AddVertex(v);
-                edges.Add(e3);
-                MakeVoronoi(diagramObjs);
-                pause = true;
-                while (pause)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        pause = false;
-                    }
-                    yield return null;
-                }
-                List<VertexEvent> toRemove = events.OfType<VertexEvent>().Where(vEvent=> vEvent.centers.Contains(ve.centers[1])).ToList();
-                foreach(VertexEvent vEvent in toRemove)
-                {
-                    events.Remove(vEvent);
-                    if (!vEvent.centers.Contains(ve.centers[0]))
-                    {
-                        VertexEvent newTriplet = new VertexEvent(vEvent.centers[0], vEvent.centers[1], vEvent.centers[2]);
-                        int index = newTriplet.centers.IndexOf(ve.centers[1]);
-                        newTriplet.centers[index] = ve.centers[0];
-                        if (!events.Contains(newTriplet))
-                        {
-                            events.Add(newTriplet);
-                        }
-                    }
-                    if (!vEvent.centers.Contains(ve.centers[2]))
-                    {
-                        VertexEvent newTriplet = new VertexEvent(vEvent.centers[0], vEvent.centers[1], vEvent.centers[2]);
-                        int index = newTriplet.centers.IndexOf(ve.centers[1]);
-                        newTriplet.centers[index] = ve.centers[2];
-                        if (!events.Contains(newTriplet))
-                        {
-                            events.Add(newTriplet);
-                        }
-                    }
-                }
             }
         }
 
-        Debug.Log("missing v1 " + edges.Where(edge => edge.v1 == null && edge.v2 != null).Count());
-        Debug.Log("missing v2 " + edges.Where(edge => edge.v1 != null && edge.v2 == null).Count());
-        Debug.Log("missing both " + edges.Where(edge => edge.v1 == null && edge.v2 == null).Count());
+        beach.Finish();
 
-        edges.RemoveAll(edge => edge.v1 == null && edge.v2 == null);
-        foreach (Edge edge in edges)
-        {
-            if(edge.v2 == null)
-            {
-                Debug.Log("endpoint");
-                edge.v2 = new Vertex((edge.c1.pos + edge.c2.pos)/2f, new Cell[]{ edge.c1, edge.c2 }.ToList());
-            }
-        }
+        Debug.Log("Done");
 
-        Debug.Log("missing v1 " + edges.Where(edge => edge.v1 == null && edge.v2 != null).Count());
-        Debug.Log("missing v2 " + edges.Where(edge => edge.v1 != null && edge.v2 == null).Count());
-        Debug.Log("missing both " + edges.Where(edge => edge.v1 == null && edge.v2 == null).Count());
+        yield return null;
 
-        /*
         // Remove old map features
         while (lineRenderersContainer.childCount > 0)
             DestroyImmediate(lineRenderersContainer.GetChild(0));
@@ -401,25 +226,26 @@ public class VoronoiMap : MonoBehaviour {
 
         // Construct current map
         //ConstructMap();
-        */
+
     }
 
     private void ConstructMap() {
-        foreach (Cell cell in cells) {
+        foreach (Cell cell in diagram.cells) {
             GameObject cellGObject = Instantiate(cellPrefab, cellsContainer);
             cellGObject.transform.localPosition = cell.pos;
             // TODO implement CellController and initialize it
         }
 
-        foreach (Vertex vertex in vertices) {
+        foreach (Vertex vertex in diagram.vertices) {
             GameObject vertexGObject = Instantiate(vertexPrefab, verticesContainer);
             vertexGObject.transform.localPosition = vertex.pos;
         }
 
-        foreach (Edge edge in edges) {
+        foreach (Edge edge in diagram.edges) {
             GameObject edgeGObject = Instantiate(lineRendererPrefab, lineRenderersContainer);
             LineRenderer line = edgeGObject.GetComponentInChildren<LineRenderer>();
-            line.SetPositions(new Vector3[] { edge.v1.pos, edge.v2.pos });
+            if(edge.start != null && edge.end != null)
+                line.SetPositions(new Vector3[] { edge.start.pos, edge.end.pos });
         }
     }
 
@@ -453,19 +279,19 @@ public class VoronoiMap : MonoBehaviour {
             Destroy(objs[0]);
             objs.RemoveAt(0);
         }
-        foreach (Vertex v in vertices)
+        foreach (Vertex v in diagram.vertices)
         {
             GameObject g = Instantiate(vertexPrefab, verticesContainer);
             g.transform.localPosition = v.pos;
             objs.Add(g);
         }
-        foreach(Edge e in edges)
+        foreach(Edge e in diagram.edges)
         {
-            if (e.v1 == null || e.v2 == null)
+            if (e.start == null || e.end == null)
                 continue;
             GameObject g = Instantiate(lineRendererPrefab, lineRenderersContainer);
             LineRenderer line = g.GetComponentInChildren<LineRenderer>();
-            line.SetPositions(new Vector3[] { e.v1.pos, e.v2.pos });
+            line.SetPositions(new Vector3[] { e.start.pos, e.end.pos });
             objs.Add(g);
         }
     }

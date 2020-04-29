@@ -1,0 +1,16 @@
+S=PN,"'s ",g|PN,"'s ",v|A," ",g|A,g|g," of ",NS|g," of ",PN|A,post|N|"New ",S|"The ",N
+N=n,post|c,n
+NS=ns|ts
+PN=pn|"The ",n
+A=a|d|c
+post="fell"|"whyte"|"wright"|"drift"|"glith"|"dyll"|"drift"|"fall"|"ford"|"bright"|"edge"
+pn="aenor"|"arlan"|"begger"|"balar"|"death"|"eden"|"ether"|"garen"|"jaren"|"kara"|"maglor"|"marren"|"pella"|"violl"
+g="way"|"hollow"|"hole"|"hill"|"bay"|"city"|"cliff"|"field"|"glade"|"dale"|"well"|"coast"|"gulch"|"armistice"|"haven"|"watch"|"gulf"|"town"|"run"|"moor"|"crest"|"vale"|"pass"|"keep"|"canyon"|"forge"|"garden"|"falls"|"forest"|"descent"
+a="hollow"|"broken"|"dry"|"snow"|"strong"|"elder"
+d="north"|"east"|"south"|"west"
+c="white"|"black"|"gold"|"red"|"green"|"blue"|"amber"
+n="fire"|"ash"|"valor"|"coal"|"ember"|"leaf"|"moon"|"sword"|"blade"|"angel"|"spirit"|"crow"|"dragon"|"king"|"queen"
+ns="fires"|"ashes"|"valor"|"coal"|"embers"|"leaves"|"moons"|"swords"|"blades"|"angels"|"spirits"|"crows"|"dragons"|"kings"|"queens"
+t="dusk"|"dawn"|"summer"|"spring"|"fall"|"autumns"|"winter"
+ts="dusks"|"dawns"|"summers"|"springs"|"falls"|"autumns"|"winters"
+v="cry"|"rip"|"rest"|"strike"|"climb"|"drain"|"gaze"|"retreat"|"advance"

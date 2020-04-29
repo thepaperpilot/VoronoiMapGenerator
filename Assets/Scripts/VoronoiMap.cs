@@ -125,12 +125,16 @@ public class VoronoiMap : MonoBehaviour {
         verticesContainer.SetParent(transform);
 
         if (diagram == null)
-            StartCoroutine(Randomize());
+            StartCoroutine(Generate());
 
         //ConstructMap();
     }
 
-    public IEnumerator Randomize() {
+    public void Randomize() {
+        StartCoroutine(Generate());
+    }
+
+    private IEnumerator Generate() {
         // Generate cells
         diagram = new Diagram();
         for (int i = 0; i < ConfigurationManager.Instance.numCells; i++) {

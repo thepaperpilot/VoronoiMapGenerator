@@ -36,9 +36,17 @@ public class BeachTree
         {
             BeachArc temp = (BeachArc)root;
             root = new BeachEdge();
-            root.left = temp;
-            root.right = new BeachArc(c);
-            start = new Vertex((c.pos + temp.site.pos)/2f);
+            if(c.pos.x < temp.site.pos.x)
+            {
+                root.left = new BeachArc(c);
+                root.right = temp;
+            }
+            else
+            {
+                root.left = temp;
+                root.right = new BeachArc(c);
+            }
+            start = new Vertex(new Vector2(c.pos.x, GetY(temp.site.pos, c.pos.x)));
             diagram.vertices.Add(start);
             if (c.pos.x > temp.site.pos.x)
             {
@@ -62,7 +70,7 @@ public class BeachTree
             par.ev = null;
         }
 
-        start = new Vertex((c.pos + par.site.pos)/2f);
+        start = new Vertex(new Vector2(c.pos.x, GetY(par.site.pos, c.pos.x)));
         diagram.vertices.Add(start);
 
         Edge left = new Edge(start, par.site, c);
@@ -165,7 +173,7 @@ public class BeachTree
         }
 
         Vector2 s = GetEdgeIntersection(leftParent.edge, rightParent.edge);
-        if (s == Vector2.negativeInfinity)
+        if (float.IsNaN(s.x) || float.IsNaN(s.y))
             return;
 
         float dx = left.site.pos.x - s.x;
@@ -258,12 +266,32 @@ public class BeachTree
         float x1 = (-b + Mathf.Sqrt(disc)) / (2 * a);
         float x2 = (-b - Mathf.Sqrt(disc)) / (2 * a);
 
+        float xl = Mathf.Min(x1, x2);
+        float xr = Mathf.Max(x1, x2);
+
+        
         float ry;
         if (p.y < r.y)
             ry = Mathf.Max(x1, x2);
         else
             ry = Mathf.Min(x1, x2);
         return ry;
+        
+        /*
+        if(p.x < r.x) //going L to R
+        {
+            if (r.y < p.y)
+                return xl;
+            else
+                return xr;
+        }
+        else
+        {
+            if (p.y < r.y)
+                return xr;
+            else
+                return xl;
+        }*/
     }
 
     public Vector2 GetEdgeIntersection(Edge a, Edge b)
@@ -272,15 +300,64 @@ public class BeachTree
         float y = a.f * x + a.g;
 
         if ((x - a.start.pos.x) / a.direction.x < 0)
-            return Vector2.negativeInfinity;
+            return new Vector2(float.NaN, float.NaN);
         if ((y - a.start.pos.y) / a.direction.y < 0)
-            return Vector2.negativeInfinity;
+            return new Vector2(float.NaN, float.NaN);
         if ((x - b.start.pos.x) / b.direction.x < 0)
-            return Vector2.negativeInfinity;
+            return new Vector2(float.NaN, float.NaN);
         if ((y - b.start.pos.y) / b.direction.y < 0)
-            return Vector2.negativeInfinity;
+            return new Vector2(float.NaN, float.NaN);
 
         return new Vector2(x, y);
+    }
+
+    public string Print()
+    {
+        if (root != null)
+            return PrintNode(root);
+        return "";
+    }
+
+    string PrintNode(BeachNode n)
+    {
+        if (n.GetType() == typeof(BeachArc))
+            return ((BeachArc)n).site.name + " ";
+        else
+        {
+            BeachEdge edgeNode = (BeachEdge)n;
+            string left = PrintNode(n.left);
+            string right = PrintNode(n.right);
+            float x = GetXOfEdge(edgeNode, sweep);
+            float y = edgeNode.edge.f * x + edgeNode.edge.g;
+            return left + "[" + x.ToString("0.0") + ", " + y.ToString("0.0") + "] " + right;
+        }
+    }
+
+    public List<Vector2> GetBeachPoints()
+    {
+        List<Vector2> points;
+        if (root != null)
+            points = GetBreaks(root);
+        else
+            points = new List<Vector2>();
+
+        points.Add(new Vector2(1.5f * width, 1.5f * height));
+        points.Insert(0, new Vector2(-0.5f*width, 1.5f*height));
+
+        return points;
+    }
+
+    List<Vector2> GetBreaks(BeachNode n)
+    {
+        if (n.GetType() == typeof(BeachArc)) return new List<Vector2>();
+        BeachEdge edgeNode = (BeachEdge)n;
+        List<Vector2> left = GetBreaks(n.left);
+        float x = GetXOfEdge(edgeNode, sweep);
+        float y = edgeNode.edge.f * x + edgeNode.edge.g;
+        left.Add(new Vector2(x, y));
+        List<Vector2> right = GetBreaks(n.right);
+        left.AddRange(right);
+        return left;
     }
 
     public class BeachArc : BeachNode

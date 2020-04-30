@@ -4,10 +4,12 @@ using UnityEngine;
 using static Geometry;
 using static BeachTree;
 using System.Linq;
+using TMPro;
 
 public class VoronoiMap : MonoBehaviour {
 
     public class Cell {
+        public string name;
         public Vector2 pos;
         public List<Vertex> vertices = new List<Vertex>();
         public List<Edge> edges = new List<Edge>();
@@ -41,6 +43,10 @@ public class VoronoiMap : MonoBehaviour {
             this.start = start;
             this.left = left;
             this.right = right;
+
+            start.edges.Add(this);
+            left.edges.Add(this);
+            right.edges.Add(this);
 
             f = (right.pos.x - left.pos.x) / (left.pos.y - right.pos.y);
             g = start.pos.y - f * start.pos.x;
@@ -128,40 +134,140 @@ public class VoronoiMap : MonoBehaviour {
         verticesContainer.SetParent(transform);
 
         if (diagram == null)
-            StartCoroutine(Generate());
+        {
+            if(ConfigurationManager.Instance.visualize)
+                StartCoroutine(GenerateVisualized());
+            else
+                Generate();
+        }
+
 
         //ConstructMap();
     }
 
     public void Randomize() {
-        StartCoroutine(Generate());
+        ClearCurrent();
+        if (ConfigurationManager.Instance.visualize)
+            StartCoroutine(GenerateVisualized());
+        else
+            Generate();
     }
 
-    private IEnumerator Generate() {
+    private void Generate()
+    {
         // Generate cells
         diagram = new Diagram();
-        for (int i = 0; i < ConfigurationManager.Instance.numCells; i++) {
-            diagram.cells.Add(new Cell {
+        for (int i = 0; i < ConfigurationManager.Instance.numCells; i++)
+        {
+            diagram.cells.Add(new Cell
+            {
                 pos = new Vector2(
                     Random.Range(0, ConfigurationManager.Instance.width),
                     Random.Range(0, ConfigurationManager.Instance.height)
-                )
+                ),
+                name = "P" + i
             });
         }
         // We'll use a sweeping algorithm to calculate the vertices and edges
         // Start with a priority queue for our events, initially storing
         // all our site events (each cell) sorted by y-coord
         SortedSet<VoronoiEvent> events = new SortedSet<VoronoiEvent>(new VoronoiEventComparer());
-        foreach (Cell cell in diagram.cells) {
-            events.Add(new SiteEvent {
+        foreach (Cell cell in diagram.cells)
+        {
+            events.Add(new SiteEvent
+            {
                 site = cell
             });
         }
 
         float sweep = ConfigurationManager.Instance.height;
-        BeachTree beach = new BeachTree(ConfigurationManager.Instance.width, ConfigurationManager.Instance.height,diagram, events);
+        BeachTree beach = new BeachTree(ConfigurationManager.Instance.width, ConfigurationManager.Instance.height, diagram, events);
 
-        
+        while (events.Count > 0)
+        {
+            VoronoiEvent e = events.Min;
+            events.Remove(e);
+
+            sweep = e.pos.y;
+            beach.sweep = e.pos.y;
+
+            if (e.GetType() == typeof(SiteEvent))
+            {
+                SiteEvent se = (SiteEvent)e;
+                beach.Insert(se.site);
+
+            }
+            else
+            {
+                VertexEvent ve = (VertexEvent)e;
+                beach.Remove(ve);
+            }
+        }
+        beach.Finish();
+
+        List<Edge> halves = diagram.edges.Where(e => e.section != null).ToList();
+        foreach (Edge e in halves)
+        {
+            e.start.edges.Remove(e);
+            e.start = e.section.end;
+            e.section.left.edges.Remove(e.section);
+            e.section.right.edges.Remove(e.section);
+            e.section.end.edges.Remove(e.section);
+            e.section.start.edges.Remove(e.section);
+            diagram.edges.Remove(e.section);
+        }
+
+        List<Vertex> orphanVerts = diagram.vertices.Where(v => v.edges.Count == 0).ToList();
+        while (orphanVerts.Count > 0)
+        {
+            diagram.vertices.Remove(orphanVerts[0]);
+            orphanVerts.RemoveAt(0);
+        }
+        List<Edge> orphanEdges = diagram.edges.Where(e => e.start == null && e.end == null).ToList();
+        while (orphanEdges.Count > 0)
+        {
+            diagram.edges.Remove(orphanEdges[0]);
+            orphanEdges.RemoveAt(0);
+        }
+
+        Debug.Log("Done");
+
+        ConstructMap();
+
+
+    }
+
+    private IEnumerator GenerateVisualized()
+    {
+        // Generate cells
+        diagram = new Diagram();
+        for (int i = 0; i < ConfigurationManager.Instance.numCells; i++)
+        {
+            diagram.cells.Add(new Cell
+            {
+                pos = new Vector2(
+                    Random.Range(0, ConfigurationManager.Instance.width),
+                    Random.Range(0, ConfigurationManager.Instance.height)
+                ),
+                name = "P" + i
+            });
+        }
+        // We'll use a sweeping algorithm to calculate the vertices and edges
+        // Start with a priority queue for our events, initially storing
+        // all our site events (each cell) sorted by y-coord
+        SortedSet<VoronoiEvent> events = new SortedSet<VoronoiEvent>(new VoronoiEventComparer());
+        foreach (Cell cell in diagram.cells)
+        {
+            events.Add(new SiteEvent
+            {
+                site = cell
+            });
+        }
+
+        float sweep = ConfigurationManager.Instance.height;
+        BeachTree beach = new BeachTree(ConfigurationManager.Instance.width, ConfigurationManager.Instance.height, diagram, events);
+
+
         GameObject sweepObj = Instantiate(sweepPrefab, lineRenderersContainer);
         LineRenderer sweepRend = sweepObj.GetComponentInChildren<LineRenderer>();
         GameObject eventObj = Instantiate(eventPrefab, verticesContainer);
@@ -171,69 +277,104 @@ public class VoronoiMap : MonoBehaviour {
         {
             GameObject cellGObject = Instantiate(cellPrefab, cellsContainer);
             cellGObject.transform.localPosition = cell.pos;
+            cellGObject.transform.GetComponentInChildren<TextMeshPro>().text = cell.name;
             // TODO implement CellController and initialize it
         }
 
         //MakeBeach(beachObjs, beach.GetPoints(sweep));
 
         sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
-        bool pause = true;
-        while (pause)
+        yield return new WaitForSeconds(0.05f);
+        while (events.Count > 0)
         {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                pause = false;
-            }
-            yield return null;
-        }
-
-        while (events.Count > 0) {
             VoronoiEvent e = events.Min;
             events.Remove(e);
+            eventObj.transform.localPosition = e.pos;
+            while (sweep-0.1f > e.pos.y)
+            {
+                sweep = sweep - 0.1f;
+                beach.sweep = sweep;
+
+                sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
+                MakeVoronoi(diagramObjs);
+                MakeBeach(beachObjs, beach.GetBeachPoints());
+                yield return new WaitForSeconds(0.1f);
+            }
             sweep = e.pos.y;
             beach.sweep = e.pos.y;
 
-
-            eventObj.transform.localPosition = e.pos;
-            MakeVoronoi(diagramObjs);
             sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
-            pause = true;
-            while (pause)
+            MakeVoronoi(diagramObjs);
+            MakeBeach(beachObjs, beach.GetBeachPoints());
+            yield return new WaitForSeconds(0.1f);
+
+            if (e.GetType() == typeof(SiteEvent))
             {
-                if (Input.GetKeyDown(KeyCode.Space))
-                {
-                    pause = false;
-                }
-                yield return null;
-            }
-            if (e.GetType() == typeof(SiteEvent)) {
                 SiteEvent se = (SiteEvent)e;
                 beach.Insert(se.site);
-                
-            } else {
+
+            }
+            else
+            {
                 VertexEvent ve = (VertexEvent)e;
                 beach.Remove(ve);
 
             }
+            MakeVoronoi(diagramObjs);
+            MakeBeach(beachObjs, beach.GetBeachPoints());
+            yield return new WaitForSeconds(0.1f);
         }
-
+        Debug.Log("Finished Events");
         beach.Finish();
 
-        Debug.Log("Done");
+        List<Edge> halves = diagram.edges.Where(e => e.section != null).ToList();
+        foreach (Edge e in halves)
+        {
+            e.start.edges.Remove(e);
+            e.start = e.section.end;
+            e.section.left.edges.Remove(e.section);
+            e.section.right.edges.Remove(e.section);
+            e.section.end.edges.Remove(e.section);
+            e.section.start.edges.Remove(e.section);
+            diagram.edges.Remove(e.section);
+        }
 
-        yield return null;
+        List<Vertex> orphanVerts = diagram.vertices.Where(v => v.edges.Count == 0).ToList();
+        while (orphanVerts.Count > 0)
+        {
+            diagram.vertices.Remove(orphanVerts[0]);
+            orphanVerts.RemoveAt(0);
+        }
+        List<Edge> orphanEdges = diagram.edges.Where(e => e.start == null && e.end == null).ToList();
+        while (orphanEdges.Count > 0)
+        {
+            diagram.edges.Remove(orphanEdges[0]);
+            orphanEdges.RemoveAt(0);
+        }
 
-        // Remove old map features
+
+        while (beachObjs.Count > 0)
+        {
+            Destroy(beachObjs[0]);
+            beachObjs.RemoveAt(0);
+        }
+        while (diagramObjs.Count > 0)
+        {
+            Destroy(diagramObjs[0]);
+            diagramObjs.RemoveAt(0);
+        }
+        // Construct current map
+        ConstructMap();
+    }
+
+    private void ClearCurrent()
+    {
         while (lineRenderersContainer.childCount > 0)
             DestroyImmediate(lineRenderersContainer.GetChild(0));
         while (cellsContainer.childCount > 0)
             DestroyImmediate(cellsContainer.GetChild(0));
         while (verticesContainer.childCount > 0)
             DestroyImmediate(verticesContainer.GetChild(0));
-
-        // Construct current map
-        //ConstructMap();
-
     }
 
     private void ConstructMap() {
@@ -268,6 +409,8 @@ public class VoronoiMap : MonoBehaviour {
         beach.Add(p);
         for(int i = 1; i < points.Count; i++)
         {
+            if (float.IsNaN(points[i].x) || float.IsNaN(points[i].y))
+                continue;
             p = Instantiate(beachVertPrefab, verticesContainer);
             p.transform.localPosition = points[i];
             beach.Add(p);

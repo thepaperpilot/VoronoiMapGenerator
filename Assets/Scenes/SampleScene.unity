@@ -683,21 +683,6 @@ PrefabInstance:
       propertyPath: m_textInfo.pageCount
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 683890085626942560, guid: 5ddd364422e64c84c8381e8e5f6e542e,
-        type: 3}
-      propertyPath: width
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 683890085626942560, guid: 5ddd364422e64c84c8381e8e5f6e542e,
-        type: 3}
-      propertyPath: height
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 683890085626942560, guid: 5ddd364422e64c84c8381e8e5f6e542e,
-        type: 3}
-      propertyPath: numCells
-      value: 8
-      objectReference: {fileID: 0}
     - target: {fileID: 868617178397096570, guid: 5ddd364422e64c84c8381e8e5f6e542e,
         type: 3}
       propertyPath: m_LocalPosition.x

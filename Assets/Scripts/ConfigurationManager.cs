@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class ConfigurationManager : MonoBehaviour {
 
+    
+
     public static ConfigurationManager Instance;
 
     public int numCells;
     public float width;
     public float height;
     public bool visualize = false;
+    
 
     private void OnEnable() {
         if (Instance == null) {

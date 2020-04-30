@@ -49,3 +49,13 @@ MonoBehaviour:
     type: 3}
   vertexPrefab: {fileID: 647198413344411688, guid: 9033be655f7b17a419221821d31a19c8,
     type: 3}
+  eventPrefab: {fileID: 0}
+  beachLinePrefab: {fileID: 0}
+  beachVertPrefab: {fileID: 0}
+  sweepPrefab: {fileID: 0}
+  raycastBGPrefab: {fileID: 3395617868124643780, guid: 979b7e10f8d03b54b80680673c5b08b1,
+    type: 3}
+  lineRenderersContainer: {fileID: 0}
+  cellsContainer: {fileID: 0}
+  verticesContainer: {fileID: 0}
+  raycastBG: {fileID: 0}

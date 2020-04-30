@@ -1196,6 +1196,12 @@ MonoBehaviour:
   moveButton: {fileID: 226401313666766407}
   addButton: {fileID: 3988879375735216318}
   deleteButton: {fileID: 3294698507170512359}
+  map: {fileID: 0}
+  cellPrefab: {fileID: 7127900571807218309, guid: 009c5b1c0aacc2d44b42650b73d30cb5,
+    type: 3}
+  bgMask:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!114 &3909010762561394272
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8024,35 +8030,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a12ddbc47b17cd478cb447d1113a22b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buttonText: GRAY
+  buttonText: Refresh
   buttonEvent:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 6734837806048866656}
-        m_MethodName: SetBackground
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: '#5F6973FF'
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 6734837806048866656}
-        m_MethodName: SetForeground
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: '#FFFFFFFF'
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   hoverSound: {fileID: 0}
   clickSound: {fileID: 0}
-  normalText: {fileID: 0}
+  normalText: {fileID: 6080776915342530706}
   soundSource: {fileID: 0}
   useCustomContent: 0
   enableButtonSounds: 0

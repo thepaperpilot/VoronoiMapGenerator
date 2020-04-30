@@ -116,6 +116,8 @@ public class VoronoiMap : MonoBehaviour {
     private GameObject beachVertPrefab;
     [SerializeField]
     private GameObject sweepPrefab;
+    [SerializeField]
+    private GameObject raycastBGPrefab;
 
     [HideInInspector]
     public Transform lineRenderersContainer;
@@ -123,6 +125,8 @@ public class VoronoiMap : MonoBehaviour {
     public Transform cellsContainer;
     [HideInInspector]
     public Transform verticesContainer;
+    [HideInInspector]
+    public Transform raycastBG;
 
     private void Awake() {
         // Create our containers, for easier organization during development
@@ -132,6 +136,8 @@ public class VoronoiMap : MonoBehaviour {
         cellsContainer.SetParent(transform);
         verticesContainer = new GameObject("Vertices").transform;
         verticesContainer.SetParent(transform);
+        raycastBG = Instantiate(raycastBGPrefab, transform).transform;
+        raycastBG.localPosition = Vector3.zero;
 
         if (diagram == null)
         {
@@ -396,12 +402,15 @@ public class VoronoiMap : MonoBehaviour {
             Destroy(toDestroy[0].gameObject);
             toDestroy.RemoveAt(0);
         }
+
+        raycastBG.localScale = new Vector3(ConfigurationManager.Instance.width, ConfigurationManager.Instance.height, 1);
     }
 
     private void ConstructMap() {
         foreach (Cell cell in diagram.cells) {
             GameObject cellGObject = Instantiate(cellPrefab, cellsContainer);
             cellGObject.transform.localPosition = cell.pos;
+            cellGObject.GetComponent<PictureCell>().cell = cell;
             // TODO implement CellController and initialize it
         }
 
@@ -411,10 +420,15 @@ public class VoronoiMap : MonoBehaviour {
         }
 
         foreach (Edge edge in diagram.edges) {
-            GameObject edgeGObject = Instantiate(lineRendererPrefab, lineRenderersContainer);
-            LineRenderer line = edgeGObject.GetComponentInChildren<LineRenderer>();
+            
             if(edge.start != null && edge.end != null)
+            {
+                GameObject edgeGObject = Instantiate(lineRendererPrefab, lineRenderersContainer);
+                LineRenderer line = edgeGObject.GetComponentInChildren<LineRenderer>();
                 line.SetPositions(new Vector3[] { edge.start.pos, edge.end.pos });
+                edgeGObject.GetComponent<PictureEdge>().edge = edge;
+            }
+                
         }
     }
 
@@ -465,6 +479,11 @@ public class VoronoiMap : MonoBehaviour {
             line.SetPositions(new Vector3[] { e.start.pos, e.end.pos });
             objs.Add(g);
         }
+    }
+
+    public Diagram GetDiagram()
+    {
+        return diagram;
     }
 
 }

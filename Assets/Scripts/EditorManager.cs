@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using static VoronoiMap;
 
 public class EditorManager : MonoBehaviour
 {
@@ -30,6 +31,18 @@ public class EditorManager : MonoBehaviour
     [SerializeField]
     private Image deleteButton;
 
+    [SerializeField]
+    private VoronoiMap map;
+    [SerializeField]
+    private GameObject cellPrefab;
+
+
+
+    Transform selected = null;
+
+    [SerializeField]
+    private LayerMask bgMask;
+
     private void OnEnable()
     {
         if (Instance == null)
@@ -40,6 +53,57 @@ public class EditorManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    void Update()
+    {
+        Vector3 localPoint;
+        RaycastHit hit;
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (selected != null)
+        {          
+            if(Physics.Raycast(ray, out hit, 1000f, bgMask))
+            {
+                localPoint = map.transform.worldToLocalMatrix * new Vector3(hit.point.x, hit.point.y, 0);
+                selected.localPosition = localPoint;
+            }
+            if (Input.GetKeyUp(KeyCode.Mouse0))
+            {
+                selected.GetComponent<PictureCell>().cell.pos = new Vector2(selected.localPosition.x, selected.localPosition.y);
+                selected = null;
+            }
+        }
+        else if (Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            if(Physics.Raycast(ray, out hit))
+            {
+                if (hit.collider.CompareTag("Background"))
+                {
+                    if(_mode == EditMode.ADD)
+                    {
+                        localPoint = map.transform.worldToLocalMatrix * new Vector3(hit.point.x, hit.point.y, 0);
+                        Transform newCell = Instantiate(cellPrefab, map.cellsContainer).transform;
+                        newCell.localPosition = localPoint;
+                        Cell site = new Cell{ pos = new Vector2(localPoint.x, localPoint.y) };
+                        newCell.GetComponent<PictureCell>().cell = site;
+                        map.GetDiagram().cells.Add(site);
+                    }
+                }
+                else if (hit.collider.CompareTag("Site"))
+                {
+                    if(_mode == EditMode.DELETE)
+                    {
+                        map.GetDiagram().cells.Remove(hit.collider.gameObject.GetComponent<PictureCell>().cell);
+                        Destroy(hit.collider.gameObject);
+                    }
+                    else if(_mode == EditMode.MOVE)
+                    {
+                        selected = hit.collider.transform;
+                    }
+                }
+                
+            }
         }
     }
 

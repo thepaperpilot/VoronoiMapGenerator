@@ -111,9 +111,12 @@ public class VoronoiMap : MonoBehaviour {
     [SerializeField]
     private GameObject sweepPrefab;
 
-    private Transform lineRenderersContainer;
-    private Transform cellsContainer;
-    private Transform verticesContainer;
+    [HideInInspector]
+    public Transform lineRenderersContainer;
+    [HideInInspector]
+    public Transform cellsContainer;
+    [HideInInspector]
+    public Transform verticesContainer;
 
     private void Awake() {
         // Create our containers, for easier organization during development

@@ -5,7 +5,7 @@ using TMPro;
 public class CityNameManager : MonoBehaviour {
 
     [SerializeField]
-    private TextMeshPro cityNameLabel;
+    private TextMeshProUGUI cityNameLabel;
 
     private CFGStringGenerator nameGenerator;
 

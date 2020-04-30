@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Background
   - Site
+  - Edge
   layers:
   - Default
   - TransparentFX

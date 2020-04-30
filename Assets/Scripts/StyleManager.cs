@@ -22,6 +22,9 @@ public class StyleManager : MonoBehaviour {
     [SerializeField]
     private Color initialBackground;
 
+    private Color foreground;
+    private Color background;
+
     private void OnEnable() {
         if (Instance == null) {
             Instance = this;
@@ -46,6 +49,7 @@ public class StyleManager : MonoBehaviour {
     private void SetBackground(Color bg) {
         Camera.main.backgroundColor = bg;
         screenshotCamera.backgroundColor = bg;
+        background = bg;
     }
 
     private void SetForeground(Color fg) {
@@ -54,11 +58,24 @@ public class StyleManager : MonoBehaviour {
             tmp.color = fg;
         cellPrefab.GetComponentInChildren<TextMeshPro>().color = fg;
         foreach (LineRenderer l in voronoiMap.lineRenderersContainer.GetComponentsInChildren<LineRenderer>()) {
+            if (l.GetComponent<PictureEdge>().painted)
+                continue;
             l.startColor = fg;
             l.endColor = fg;
         }
         LineRenderer lr = edgePrefab.GetComponentInChildren<LineRenderer>();
         lr.startColor = fg;
         lr.endColor = fg;
+        foreground = fg;
+    }
+
+    public Color GetBackground()
+    {
+        return background;
+    }
+
+    public Color GetForeground()
+    {
+        return foreground;
     }
 }

@@ -5,6 +5,7 @@ using static Geometry;
 using static BeachTree;
 using System.Linq;
 using TMPro;
+using System;
 
 public class VoronoiMap : MonoBehaviour {
 
@@ -26,7 +27,7 @@ public class VoronoiMap : MonoBehaviour {
         }
     }
 
-    public class Edge
+    public class Edge : System.IEquatable<Edge>
     {
         public Vertex start;
         public Vertex end;
@@ -51,6 +52,11 @@ public class VoronoiMap : MonoBehaviour {
             f = (right.pos.x - left.pos.x) / (left.pos.y - right.pos.y);
             g = start.pos.y - f * start.pos.x;
             direction = new Vector2(right.pos.y - left.pos.y, left.pos.x- right.pos.x);
+        }
+
+        bool IEquatable<Edge>.Equals(Edge other)
+        {
+            return (start == other.start && end == other.end) || (start == other.end && end == other.start);
         }
     }
 
@@ -157,8 +163,8 @@ public class VoronoiMap : MonoBehaviour {
             diagram.cells.Add(new Cell
             {
                 pos = new Vector2(
-                    Random.Range(0, ConfigurationManager.Instance.width),
-                    Random.Range(0, ConfigurationManager.Instance.height)
+                    UnityEngine.Random.Range(0, ConfigurationManager.Instance.width),
+                    UnityEngine.Random.Range(0, ConfigurationManager.Instance.height)
                 ),
                 name = "P" + i
             });
@@ -246,6 +252,25 @@ public class VoronoiMap : MonoBehaviour {
             orphanEdges.RemoveAt(0);
         }
 
+        List<Edge> noDupes = new List<Edge>();
+        foreach(Edge e in diagram.edges)
+        {
+            if(noDupes.Where(x=>x.Equals(e)).Count() > 0)
+            {
+                e.start.edges.Remove(e);
+                e.end.edges.Remove(e);
+                e.left.edges.Remove(e);
+                e.right.edges.Remove(e);
+                Debug.Log("deleted dupe");
+            }
+            else
+            {
+                Debug.Log("unique");
+                noDupes.Add(e);
+            }
+        }
+        diagram.edges = noDupes;
+
         Debug.Log("Done");
 
         ConstructMap();
@@ -253,19 +278,6 @@ public class VoronoiMap : MonoBehaviour {
 
     private IEnumerator GenerateVisualized()
     {
-        // Generate cells
-        diagram = new Diagram();
-        for (int i = 0; i < ConfigurationManager.Instance.numCells; i++)
-        {
-            diagram.cells.Add(new Cell
-            {
-                pos = new Vector2(
-                    Random.Range(0, ConfigurationManager.Instance.width),
-                    Random.Range(0, ConfigurationManager.Instance.height)
-                ),
-                name = "P" + i
-            });
-        }
         // We'll use a sweeping algorithm to calculate the vertices and edges
         // Start with a priority queue for our events, initially storing
         // all our site events (each cell) sorted by y-coord
@@ -427,6 +439,7 @@ public class VoronoiMap : MonoBehaviour {
                 LineRenderer line = edgeGObject.GetComponentInChildren<LineRenderer>();
                 line.SetPositions(new Vector3[] { edge.start.pos, edge.end.pos });
                 edgeGObject.GetComponent<PictureEdge>().edge = edge;
+                edgeGObject.GetComponent<PictureEdge>().Init();
             }
                 
         }

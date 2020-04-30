@@ -233,8 +233,6 @@ public class VoronoiMap : MonoBehaviour {
         Debug.Log("Done");
 
         ConstructMap();
-
-
     }
 
     private IEnumerator GenerateVisualized()
@@ -369,12 +367,25 @@ public class VoronoiMap : MonoBehaviour {
 
     private void ClearCurrent()
     {
-        while (lineRenderersContainer.childCount > 0)
-            DestroyImmediate(lineRenderersContainer.GetChild(0));
-        while (cellsContainer.childCount > 0)
-            DestroyImmediate(cellsContainer.GetChild(0));
-        while (verticesContainer.childCount > 0)
-            DestroyImmediate(verticesContainer.GetChild(0));
+        List<Transform> toDestroy = new List<Transform>();
+        for(int i = 0; i < lineRenderersContainer.childCount; i++)
+        {
+            toDestroy.Add(lineRenderersContainer.GetChild(i));
+        }
+        for(int i = 0; i < cellsContainer.childCount; i++)
+        {
+            toDestroy.Add(cellsContainer.GetChild(i));
+        }
+        for(int i = 0; i < verticesContainer.childCount; i++)
+        {
+            toDestroy.Add(verticesContainer.GetChild(i));
+        }
+
+        while(toDestroy.Count > 0)
+        {
+            Destroy(toDestroy[0].gameObject);
+            toDestroy.RemoveAt(0);
+        }
     }
 
     private void ConstructMap() {

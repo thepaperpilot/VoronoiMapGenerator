@@ -9,6 +9,7 @@ public class ConfigurationManager : MonoBehaviour {
     public int numCells;
     public float width;
     public float height;
+    public bool visualize = false;
 
     private void OnEnable() {
         if (Instance == null) {

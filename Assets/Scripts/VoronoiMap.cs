@@ -132,8 +132,10 @@ public class VoronoiMap : MonoBehaviour {
 
         if (diagram == null)
         {
-            //Generate();
-            StartCoroutine(GenerateVisualized());
+            if(ConfigurationManager.Instance.visualize)
+                StartCoroutine(GenerateVisualized());
+            else
+                Generate();
         }
 
 
@@ -142,8 +144,10 @@ public class VoronoiMap : MonoBehaviour {
 
     public void Randomize() {
         ClearCurrent();
-        //StartCoroutine(Generate());
-        Generate();
+        if (ConfigurationManager.Instance.visualize)
+            StartCoroutine(GenerateVisualized());
+        else
+            Generate();
     }
 
     private void Generate()
@@ -277,7 +281,7 @@ public class VoronoiMap : MonoBehaviour {
         //MakeBeach(beachObjs, beach.GetPoints(sweep));
 
         sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
-        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForSeconds(0.05f);
         while (events.Count > 0)
         {
             VoronoiEvent e = events.Min;
@@ -299,7 +303,7 @@ public class VoronoiMap : MonoBehaviour {
             sweepRend.SetPositions(new Vector3[] { new Vector2(0, sweep), new Vector2(ConfigurationManager.Instance.width, sweep) });
             MakeVoronoi(diagramObjs);
             MakeBeach(beachObjs, beach.GetBeachPoints());
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.1f);
 
             if (e.GetType() == typeof(SiteEvent))
             {
@@ -315,7 +319,7 @@ public class VoronoiMap : MonoBehaviour {
             }
             MakeVoronoi(diagramObjs);
             MakeBeach(beachObjs, beach.GetBeachPoints());
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.1f);
         }
         Debug.Log("Finished Events");
         beach.Finish();

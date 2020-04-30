@@ -10,7 +10,11 @@ public class StyleManager : MonoBehaviour {
     [SerializeField]
     private TextMeshProUGUI titleLabel;
     [SerializeField]
+    private Camera screenshotCamera;
+    [SerializeField]
     private GameObject edgePrefab;
+    [SerializeField]
+    private GameObject cellPrefab;
     [SerializeField]
     private VoronoiMap voronoiMap;
     [SerializeField]
@@ -41,10 +45,14 @@ public class StyleManager : MonoBehaviour {
 
     private void SetBackground(Color bg) {
         Camera.main.backgroundColor = bg;
+        screenshotCamera.backgroundColor = bg;
     }
 
     private void SetForeground(Color fg) {
         titleLabel.color = fg;
+        foreach (TextMeshPro tmp in voronoiMap.cellsContainer.GetComponentsInChildren<TextMeshPro>())
+            tmp.color = fg;
+        cellPrefab.GetComponentInChildren<TextMeshPro>().color = fg;
         foreach (LineRenderer l in voronoiMap.lineRenderersContainer.GetComponentsInChildren<LineRenderer>()) {
             l.startColor = fg;
             l.endColor = fg;

@@ -396,8 +396,8 @@ public class VoronoiMap : MonoBehaviour {
         }
 
         foreach (Vertex vertex in diagram.vertices) {
-            GameObject vertexGObject = Instantiate(vertexPrefab, verticesContainer);
-            vertexGObject.transform.localPosition = vertex.pos;
+            //GameObject vertexGObject = Instantiate(vertexPrefab, verticesContainer);
+            //vertexGObject.transform.localPosition = vertex.pos;
         }
 
         foreach (Edge edge in diagram.edges) {

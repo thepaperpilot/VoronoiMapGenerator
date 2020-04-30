@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class EditorManager : MonoBehaviour
 {
@@ -22,6 +23,13 @@ public class EditorManager : MonoBehaviour
     [SerializeField]
     private Color inactiveModeButton;
 
+    [SerializeField]
+    private Image moveButton;
+    [SerializeField]
+    private Image addButton;
+    [SerializeField]
+    private Image deleteButton;
+
     private void OnEnable()
     {
         if (Instance == null)
@@ -35,13 +43,43 @@ public class EditorManager : MonoBehaviour
         }
     }
 
-    public void SetMode(EditMode value)
+    public void SetMode(string value)
+    {
+        switch (value.ToUpper())
+        {
+            case "MOVE":
+                SetMode(EditMode.MOVE);
+                break;
+            case "ADD":
+                SetMode(EditMode.ADD);
+                break;
+            case "DELETE":
+                SetMode(EditMode.DELETE);
+                break;
+        }
+    }
+
+    void SetMode(EditMode value)
     {
         _mode = _mode == value ? EditMode.OFF : value;
+        UpdateButtons();
     }
 
     private void UpdateButtons()
     {
+        if (_mode == EditMode.MOVE)
+            moveButton.color = activeModeButton;
+        else
+            moveButton.color = inactiveModeButton;
 
+        if (_mode == EditMode.ADD)
+            addButton.color = activeModeButton;
+        else
+            addButton.color = inactiveModeButton;
+
+        if (_mode == EditMode.DELETE)
+            deleteButton.color = activeModeButton;
+        else
+            deleteButton.color = inactiveModeButton;
     }
 }

@@ -9,7 +9,7 @@ using TMPro;
 public class VoronoiMap : MonoBehaviour {
 
     public class Cell {
-        public string name;
+        public string name = "";
         public Vector2 pos;
         public List<Vertex> vertices = new List<Vertex>();
         public List<Edge> edges = new List<Edge>();
@@ -135,10 +135,7 @@ public class VoronoiMap : MonoBehaviour {
 
         if (diagram == null)
         {
-            if(ConfigurationManager.Instance.visualize)
-                StartCoroutine(GenerateVisualized());
-            else
-                Generate();
+            Randomize();
         }
 
 
@@ -147,15 +144,7 @@ public class VoronoiMap : MonoBehaviour {
 
     public void Randomize() {
         ClearCurrent();
-        if (ConfigurationManager.Instance.visualize)
-            StartCoroutine(GenerateVisualized());
-        else
-            Generate();
-    }
 
-    private void Generate()
-    {
-        // Generate cells
         diagram = new Diagram();
         for (int i = 0; i < ConfigurationManager.Instance.numCells; i++)
         {
@@ -168,6 +157,27 @@ public class VoronoiMap : MonoBehaviour {
                 name = "P" + i
             });
         }
+
+        if (ConfigurationManager.Instance.visualize)
+            StartCoroutine(GenerateVisualized());
+        else
+            Generate();
+    }
+
+    public void Regenerate()
+    {
+        ClearCurrent();
+        diagram.edges = new List<Edge>();
+        diagram.vertices = new List<Vertex>();
+        if (ConfigurationManager.Instance.visualize)
+            StartCoroutine(GenerateVisualized());
+        else
+            Generate();
+    }
+
+    private void Generate()
+    {
+        
         // We'll use a sweeping algorithm to calculate the vertices and edges
         // Start with a priority queue for our events, initially storing
         // all our site events (each cell) sorted by y-coord

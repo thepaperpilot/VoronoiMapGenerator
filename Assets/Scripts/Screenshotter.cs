@@ -40,6 +40,7 @@ public class Screenshotter : MonoBehaviour {
         cityNameRectTransform.anchoredPosition = new Vector2(0, -50);
         citynameCanvas.worldCamera = camera;
         camera.enabled = true;
+        EditorManager.Instance.ShowLines(false);
         if (renderCellNames)
             camera.cullingMask |= 1 << LayerMask.NameToLayer("Cell-Names");
         else
@@ -64,6 +65,7 @@ public class Screenshotter : MonoBehaviour {
         System.IO.File.WriteAllBytes(Application.dataPath + "/../" + filename + ".png", bytes);
 
         // Reset render settings
+        EditorManager.Instance.ShowLines(true);
         cityNameRectTransform.anchoredPosition = cityNameAnchoredPosition;
         citynameCanvas.worldCamera = null;
         camera.enabled = false;

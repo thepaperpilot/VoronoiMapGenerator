@@ -155,9 +155,8 @@ public class VoronoiMap : MonoBehaviour {
     }
 
     public void Randomize() {
-        ClearCurrent();
-
         diagram = new Diagram();
+        ClearCurrent();
         for (int i = 0; i < ConfigurationManager.Instance.numCells; i++)
         {
             diagram.cells.Add(new Cell
@@ -181,6 +180,11 @@ public class VoronoiMap : MonoBehaviour {
         ClearCurrent();
         diagram.edges = new List<Edge>();
         diagram.vertices = new List<Vertex>();
+        foreach(Cell c in diagram.cells)
+        {
+            c.vertices = new List<Vertex>();
+            c.edges = new List<Edge>();
+        }
         if (ConfigurationManager.Instance.visualize)
             StartCoroutine(GenerateVisualized());
         else
@@ -239,37 +243,7 @@ public class VoronoiMap : MonoBehaviour {
             diagram.edges.Remove(e.section);
         }
 
-        List<Vertex> orphanVerts = diagram.vertices.Where(v => v.edges.Count == 0).ToList();
-        while (orphanVerts.Count > 0)
-        {
-            diagram.vertices.Remove(orphanVerts[0]);
-            orphanVerts.RemoveAt(0);
-        }
-        List<Edge> orphanEdges = diagram.edges.Where(e => e.start == null && e.end == null).ToList();
-        while (orphanEdges.Count > 0)
-        {
-            diagram.edges.Remove(orphanEdges[0]);
-            orphanEdges.RemoveAt(0);
-        }
-
-        List<Edge> noDupes = new List<Edge>();
-        foreach(Edge e in diagram.edges)
-        {
-            if(noDupes.Where(x=>x.Equals(e)).Count() > 0)
-            {
-                e.start.edges.Remove(e);
-                e.end.edges.Remove(e);
-                e.left.edges.Remove(e);
-                e.right.edges.Remove(e);
-                Debug.Log("deleted dupe");
-            }
-            else
-            {
-                Debug.Log("unique");
-                noDupes.Add(e);
-            }
-        }
-        diagram.edges = noDupes;
+        FixDiagram();
 
         Debug.Log("Done");
 
@@ -316,7 +290,7 @@ public class VoronoiMap : MonoBehaviour {
             VoronoiEvent e = events.Min;
             events.Remove(e);
             eventObj.transform.localPosition = e.pos;
-            while (sweep-0.1f > e.pos.y)
+            while (sweep - 0.1f > e.pos.y)
             {
                 sweep = sweep - 0.1f;
                 beach.sweep = sweep;
@@ -365,19 +339,7 @@ public class VoronoiMap : MonoBehaviour {
             diagram.edges.Remove(e.section);
         }
 
-        List<Vertex> orphanVerts = diagram.vertices.Where(v => v.edges.Count == 0).ToList();
-        while (orphanVerts.Count > 0)
-        {
-            diagram.vertices.Remove(orphanVerts[0]);
-            orphanVerts.RemoveAt(0);
-        }
-        List<Edge> orphanEdges = diagram.edges.Where(e => e.start == null && e.end == null).ToList();
-        while (orphanEdges.Count > 0)
-        {
-            diagram.edges.Remove(orphanEdges[0]);
-            orphanEdges.RemoveAt(0);
-        }
-
+        FixDiagram();
 
         while (beachObjs.Count > 0)
         {
@@ -391,6 +353,74 @@ public class VoronoiMap : MonoBehaviour {
         }
         // Construct current map
         ConstructMap();
+    }
+
+    private void FixDiagram()
+    {
+        List<Vertex> orphanVerts = diagram.vertices.Where(v => v.edges.Count == 0).ToList();
+        while (orphanVerts.Count > 0)
+        {
+            diagram.vertices.Remove(orphanVerts[0]);
+            orphanVerts.RemoveAt(0);
+        }
+        List<Edge> orphanEdges = diagram.edges.Where(e => e.start == null && e.end == null).ToList();
+        while (orphanEdges.Count > 0)
+        {
+            diagram.edges.Remove(orphanEdges[0]);
+            orphanEdges.RemoveAt(0);
+        }
+
+        List<Edge> noDupes = new List<Edge>();
+        foreach (Edge e in diagram.edges)
+        {
+            if (noDupes.Where(x => x.Equals(e)).Count() > 0)
+            {
+                e.start.edges.Remove(e);
+                e.end.edges.Remove(e);
+                e.left.edges.Remove(e);
+                e.right.edges.Remove(e);
+                Debug.Log("deleted dupe");
+            }
+            else
+            {
+                Debug.Log("unique");
+                noDupes.Add(e);
+            }
+        }
+        diagram.edges = noDupes;
+
+        List<Edge> allInside = new List<Edge>();
+        foreach (Edge e in diagram.edges)//remove edges completely outside the map, they get in the way later
+        {
+            float w = ConfigurationManager.Instance.width;
+            float h = ConfigurationManager.Instance.height;
+            if ((e.start.pos.x <= 0 && e.end.pos.x <= 0) || (e.start.pos.x >= w && e.end.pos.x >= w) ||
+                (e.start.pos.y <= 0 && e.end.pos.y <= 0) || (e.start.pos.y >= h && e.end.pos.y >= h))
+            {
+                e.start.edges.Remove(e);
+                e.end.edges.Remove(e);
+                e.left.edges.Remove(e);
+                e.right.edges.Remove(e);
+            }
+            else
+            {
+                allInside.Add(e);
+            }
+        }
+        diagram.edges = allInside;
+
+        foreach (Edge e in diagram.edges)
+        {
+            foreach (Vertex v in new Vertex[] { e.start, e.end })
+            {
+                if (!e.left.vertices.Contains(v))
+                    e.left.vertices.Add(v);
+                if (!e.right.vertices.Contains(v))
+                    e.right.vertices.Add(v);
+            }
+        }
+
+        IncludeCorners();
     }
 
     private void ClearCurrent()
@@ -423,7 +453,7 @@ public class VoronoiMap : MonoBehaviour {
             GameObject cellGObject = Instantiate(cellPrefab, cellsContainer);
             cellGObject.transform.localPosition = cell.pos;
             cellGObject.GetComponent<PictureCell>().cell = cell;
-            // TODO implement CellController and initialize it
+            cellGObject.GetComponent<PictureCell>().Init();
         }
 
         foreach (Vertex vertex in diagram.vertices) {
@@ -494,9 +524,47 @@ public class VoronoiMap : MonoBehaviour {
         }
     }
 
+    void IncludeCorners()
+    {
+        List<Cell> sites = new List<Cell>(diagram.cells); 
+        Vector2 x = new Vector2(ConfigurationManager.Instance.width, 0);
+        Vector2 y = new Vector2(0, ConfigurationManager.Instance.height);
+        foreach (Vector2 point in new Vector2[]{ Vector2.zero, x, y, x + y}){
+            sites.Sort(new ClosestPointCellComparer(point));
+            sites[0].vertices.Add(new Vertex(point));
+        }
+    }
+
     public Diagram GetDiagram()
     {
         return diagram;
+    }
+
+    public void ShowMiscLines(bool show)
+    {
+        for (int i = 0; i < lineRenderersContainer.childCount; i++)
+        {
+            Transform tf = lineRenderersContainer.GetChild(i);
+            if (!tf.GetComponent<PictureEdge>().painted)
+            {
+                tf.GetComponent<LineRenderer>().enabled = show;
+            }
+        }
+    }
+
+    class ClosestPointCellComparer : IComparer<Cell>
+    {
+        Vector2 reference;
+
+        public ClosestPointCellComparer(Vector2 reference)
+        {
+            this.reference = reference;
+        }
+
+        public int Compare(Cell c1, Cell c2)
+        {
+            return Vector2.Distance(reference,c1.pos).CompareTo(Vector2.Distance(reference, c2.pos));
+        }
     }
 
 }

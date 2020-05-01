@@ -140,6 +140,7 @@ public class VoronoiMap : MonoBehaviour {
         lineRenderersContainer.SetParent(transform);
         cellsContainer = new GameObject("Cells").transform;
         cellsContainer.SetParent(transform);
+        cellsContainer.localPosition = Vector3.forward*0.005f;
         verticesContainer = new GameObject("Vertices").transform;
         verticesContainer.SetParent(transform);
         raycastBG = Instantiate(raycastBGPrefab, transform).transform;
